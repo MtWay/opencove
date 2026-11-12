@@ -139,9 +139,7 @@ describe('terminal clipboard routing', () => {
       isBracketedPasteMode: () => false,
     })
     handle(new KeyboardEvent('keydown', { key: 'v', ctrlKey: true }))
-    await vi.waitFor(() =>
-      expect(write).toHaveBeenCalledExactlyOnceWith('C:\\Temp\\paste.png'),
-    )
+    await vi.waitFor(() => expect(write).toHaveBeenCalledExactlyOnceWith('C:\\Temp\\paste.png'))
   })
 
   it('preserves shell Alt+V', () => {

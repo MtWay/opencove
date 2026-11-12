@@ -63,9 +63,7 @@ export function useProjectFolderDropImport({
       .map(file => getPathForFile(file))
       .filter((path): path is string => typeof path === 'string' && path.length > 0)
 
-    const results = await Promise.allSettled(
-      paths.map(path => importDirectory({ path })),
-    )
+    const results = await Promise.allSettled(paths.map(path => importDirectory({ path })))
 
     let importedCount = 0
     let failedCount = 0
