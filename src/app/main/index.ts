@@ -316,6 +316,12 @@ app.whenReady().then(async () => {
         { role: 'windowMenu' },
       ]),
     )
+  } else {
+    // No native menu on Windows/Linux: Electron's default menu installs
+    // Alt+letter mnemonics (e.g. Alt+V for "&View") that are consumed before
+    // keydown reaches the terminal, breaking agent CLIs that bind Alt+V
+    // (e.g. kimi's image paste on Windows).
+    Menu.setApplicationMenu(null)
   }
 
   // Default open or close DevTools by F12 in development

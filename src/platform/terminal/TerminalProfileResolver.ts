@@ -124,7 +124,11 @@ function withTerminalCapabilityEnv(
 
   const nextEnv = { ...env }
 
-  if (!hasMeaningfulEnvValue(nextEnv.TERM)) {
+  // TERM=dumb leaks in from the GUI app's own launch shell (e.g. dev scripts
+  // spawned from a non-interactive bash). It must not propagate into terminal
+  // sessions: CLIs degrade features (bracketed paste, media paste) on dumb
+  // terminals, defeating the purpose of this capability env.
+  if (!hasMeaningfulEnvValue(nextEnv.TERM) || nextEnv.TERM?.trim() === 'dumb') {
     nextEnv.TERM = 'xterm-256color'
   }
 

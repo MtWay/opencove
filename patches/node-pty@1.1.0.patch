@@ -39,6 +39,16 @@ index 0000000000000000000000000000000000000000..c3749178741175f00b8dfbc7063e3f37
 +    assertWindowsConsoleGeometryAvailable();
 +    return (0, utils_1.loadNativeModule)('conpty_console_list').module.getConsoleGeometry(pid);
 +}
+diff --git a/package.json b/package.json
+--- a/package.json
++++ b/package.json
+@@ -44,5 +44,5 @@
+     "test": "cross-env NODE_ENV=test mocha -R spec --exit lib/*.test.js",
+     "posttest": "npm run lint",
+-    "prepare": "npm run build",
++    "prepare": "node -e process.exit(0)",
+     "prepublishOnly": "npm run build"
+   },
 diff --git a/scripts/prebuild.js b/scripts/prebuild.js
 index 17f1d980e62e017d77058627a7a15c4c29f9470c..b2fdec3a2348da2ea96bb315cdb50a2fe293d564 100644
 --- a/scripts/prebuild.js

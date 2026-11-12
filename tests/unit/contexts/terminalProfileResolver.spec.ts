@@ -239,6 +239,26 @@ describe('TerminalProfileResolver', () => {
     expect(result.env.TERM_PROGRAM).toBe('OpenCove')
   })
 
+  it('replaces an inherited TERM=dumb instead of keeping it', async () => {
+    const resolver = new TerminalProfileResolver({
+      platform: 'win32',
+      env: () => ({ PATH: 'C:\\Windows\\System32', TERM: 'dumb' }),
+      locateWindowsCommands: async () => [
+        'C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe',
+      ],
+      listWslDistros: async () => [],
+    })
+
+    const result = await resolver.resolveTerminalSpawn({
+      cwd: 'C:\\repo',
+      profileId: 'powershell',
+      cols: 80,
+      rows: 24,
+    })
+
+    expect(result.env.TERM).toBe('xterm-256color')
+  })
+
   it('matches Windows profile ids case-insensitively during restore', async () => {
     const resolver = new TerminalProfileResolver({
       platform: 'win32',

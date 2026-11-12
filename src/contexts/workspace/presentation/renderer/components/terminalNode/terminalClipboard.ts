@@ -11,10 +11,33 @@ export function resolveTerminalImagePasteSequence(
   provider: string | null,
   platform: string,
 ): string {
-  // Pi changed its Windows default to Alt+V; Kimi still binds Ctrl+V.
-  return platform === 'win32' && (provider === 'pi' || provider === 'claude-code')
+  // Pi and Kimi bind Alt+V on Windows; older Kimi used Ctrl+V (0x16).
+  return platform === 'win32' &&
+    (provider === 'pi' || provider === 'kimi' || provider === 'claude-code')
     ? '\u001bv'
     : '\u0016'
+}
+
+// kimi on Windows only triggers its clipboard-image paste from genuine Win32
+// console input records (classic conhost / Windows Terminal). Under ConPTY —
+// every xterm.js-based terminal — the VT-translated Alt+V event reaches the
+// process but kimi does not react to it (verified against kimi 0.15.0). For
+// these providers, paste the clipboard image as a temp file path instead;
+// the agent reads the image file itself when the message is submitted.
+const WINDOWS_IMAGE_PATH_PASTE_PROVIDERS = ['kimi']
+
+function shouldPasteImageAsFilePath(
+  provider: string | null,
+  platform: string,
+  clipboard: TerminalClipboardSnapshot,
+): clipboard is TerminalClipboardSnapshot & { imageFilePath: string } {
+  return (
+    platform === 'win32' &&
+    provider !== null &&
+    WINDOWS_IMAGE_PATH_PASTE_PROVIDERS.includes(provider) &&
+    typeof clipboard.imageFilePath === 'string' &&
+    clipboard.imageFilePath.length > 0
+  )
 }
 
 export function createTerminalClipboardHandler(options: {
@@ -34,7 +57,7 @@ export function createTerminalClipboardHandler(options: {
       const clipboard = window.opencoveApi?.clipboard
       return typeof clipboard?.readTerminalPaste === 'function'
         ? await clipboard.readTerminalPaste()
-        : { text: await readTextFromClipboard(), hasImage: false }
+        : { text: await readTextFromClipboard(), hasImage: false, imageFilePath: null }
     })
 
   return event => {
@@ -62,7 +85,10 @@ export function createTerminalClipboardHandler(options: {
 
     event.preventDefault()
     event.stopPropagation()
-    if (isNativeAlias) {
+    if (
+      isNativeAlias &&
+      (provider === null || !WINDOWS_IMAGE_PATH_PASTE_PROVIDERS.includes(provider))
+    ) {
       if (!options.isDisposed()) {
         options.write(resolveTerminalImagePasteSequence(provider, options.platform))
       }
@@ -78,10 +104,22 @@ export function createTerminalClipboardHandler(options: {
         if (!clipboard || options.isDisposed()) {
           return
         }
+        if (options.getProvider && options.getProvider() !== provider) {
+          return
+        }
+        if (shouldPasteImageAsFilePath(provider, options.platform, clipboard)) {
+          await pasteTextFromClipboard({
+            readClipboardText: () => clipboard.imageFilePath,
+            writePastePayload: data => {
+              if (!options.isDisposed()) {
+                options.write(data)
+              }
+            },
+            isBracketedPasteMode: options.isBracketedPasteMode,
+          })
+          return
+        }
         if (clipboard.hasImage) {
-          if (options.getProvider && options.getProvider() !== provider) {
-            return
-          }
           options.write(resolveTerminalImagePasteSequence(provider, options.platform))
           return
         }

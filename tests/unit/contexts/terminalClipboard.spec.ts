@@ -5,10 +5,14 @@ import {
 } from '../../../src/contexts/workspace/presentation/renderer/components/terminalNode/terminalClipboard'
 
 describe('terminal clipboard routing', () => {
-  it('reads provider changes without replacing the terminal clipboard handler', () => {
+  it('reads provider changes without replacing the terminal clipboard handler', async () => {
     let provider: string | null = null
     const write = vi.fn()
-    const readClipboard = vi.fn()
+    const readClipboard = vi.fn(async () => ({
+      text: '',
+      hasImage: true,
+      imageFilePath: 'C:\\tmp\\img.png',
+    }))
     const handle = createTerminalClipboardHandler({
       provider: null,
       getProvider: () => provider,
@@ -25,11 +29,11 @@ describe('terminal clipboard routing', () => {
     expect(write).toHaveBeenLastCalledWith('\u001bv')
     provider = 'kimi'
     expect(press()).toBe(true)
-    expect(write).toHaveBeenLastCalledWith('\u0016')
+    await vi.waitFor(() => expect(write).toHaveBeenLastCalledWith('C:\\tmp\\img.png'))
     provider = null
     expect(press()).toBe(false)
     expect(write).toHaveBeenCalledTimes(2)
-    expect(readClipboard).not.toHaveBeenCalled()
+    expect(readClipboard).toHaveBeenCalledTimes(1)
   })
   it('drops an image read that completes after disposal', async () => {
     let complete!: (value: { text: string; hasImage: boolean }) => void
@@ -55,7 +59,7 @@ describe('terminal clipboard routing', () => {
 
   it.each([
     ['pi', '\u001bv'],
-    ['kimi', '\u0016'],
+    ['kimi', '\u001bv'],
     ['codex', '\u0016'],
     ['claude-code', '\u001bv'],
   ])('routes Windows Alt+V images for %s once', async (provider, expected) => {
@@ -74,7 +78,7 @@ describe('terminal clipboard routing', () => {
   it.each([
     ['pi', 'win32', '\u001bv'],
     ['pi', 'darwin', '\u0016'],
-    ['kimi', 'win32', '\u0016'],
+    ['kimi', 'win32', '\u001bv'],
     ['codex', 'darwin', '\u0016'],
     ['claude-code', 'win32', '\u001bv'],
     ['claude-code', 'darwin', '\u0016'],
@@ -99,6 +103,46 @@ describe('terminal clipboard routing', () => {
       await vi.waitFor(() => expect(write).toHaveBeenCalledExactlyOnceWith('\u0016'))
     },
   )
+
+  it('pastes the clipboard image as a temp file path for kimi on Windows (Alt+V)', async () => {
+    const write = vi.fn()
+    const handle = createTerminalClipboardHandler({
+      provider: 'kimi',
+      platform: 'win32',
+      write,
+      readClipboard: async () => ({
+        text: '',
+        hasImage: true,
+        imageFilePath: 'C:\\Temp\\paste.png',
+      }),
+      isDisposed: () => false,
+      isBracketedPasteMode: () => true,
+    })
+    expect(handle(new KeyboardEvent('keydown', { key: 'v', altKey: true }))).toBe(true)
+    await vi.waitFor(() =>
+      expect(write).toHaveBeenCalledExactlyOnceWith('\u001b[200~C:\\Temp\\paste.png\u001b[201~'),
+    )
+  })
+
+  it('pastes the clipboard image as a temp file path for kimi on Windows (Ctrl+V)', async () => {
+    const write = vi.fn()
+    const handle = createTerminalClipboardHandler({
+      provider: 'kimi',
+      platform: 'win32',
+      write,
+      readClipboard: async () => ({
+        text: '',
+        hasImage: true,
+        imageFilePath: 'C:\\Temp\\paste.png',
+      }),
+      isDisposed: () => false,
+      isBracketedPasteMode: () => false,
+    })
+    handle(new KeyboardEvent('keydown', { key: 'v', ctrlKey: true }))
+    await vi.waitFor(() =>
+      expect(write).toHaveBeenCalledExactlyOnceWith('C:\\Temp\\paste.png'),
+    )
+  })
 
   it('preserves shell Alt+V', () => {
     const readClipboard = vi.fn()

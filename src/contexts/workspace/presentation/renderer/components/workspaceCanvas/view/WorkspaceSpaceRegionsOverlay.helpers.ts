@@ -1,10 +1,11 @@
-export function normalizeComparablePath(pathValue: string): string {
+export function normalizeComparablePath(pathValue: string, platform?: string): string {
   const normalized = pathValue
     .trim()
     .replace(/[/\\]+$/, '')
     .replaceAll('\\', '/')
-  const platform = window.opencoveApi?.meta?.platform
-  return platform === 'win32' ? normalized.toLowerCase() : normalized
+  const resolvedPlatform =
+    platform ?? (typeof window === 'undefined' ? undefined : window.opencoveApi?.meta?.platform)
+  return resolvedPlatform === 'win32' ? normalized.toLowerCase() : normalized
 }
 
 export function resolveClosestWorktree<T extends { path: string }>(

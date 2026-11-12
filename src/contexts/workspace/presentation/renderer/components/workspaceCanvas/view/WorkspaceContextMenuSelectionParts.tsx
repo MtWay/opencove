@@ -3,6 +3,7 @@ import {
   ArrowRightIcon,
   CloseIcon,
   FocusIcon,
+  FolderPlusIcon,
   TagIcon,
 } from '@app/renderer/components/ui/pixelIcons'
 import { useTranslation } from '@app/renderer/i18n'
@@ -14,6 +15,7 @@ import { FilesystemPathMenuItems } from './FilesystemPathMenuItems'
 export function WorkspaceContextSelectionMenuContent({
   createSpaceShortcut,
   createSpaceFromSelectedNodes,
+  createSpaceFromNodeDirectory,
   openLabelColorSubmenu,
   labelColorButtonRef,
   isLabelColorSubmenuOpen,
@@ -27,6 +29,7 @@ export function WorkspaceContextSelectionMenuContent({
 }: {
   createSpaceShortcut?: MenuItemShortcut | null
   createSpaceFromSelectedNodes: () => void
+  createSpaceFromNodeDirectory: (nodeId: string) => void
   openLabelColorSubmenu: () => void
   labelColorButtonRef: React.RefObject<HTMLButtonElement | null>
   isLabelColorSubmenuOpen: boolean
@@ -58,6 +61,15 @@ export function WorkspaceContextSelectionMenuContent({
           />
           <MenuSeparator />
         </>
+      ) : null}
+      {hasPath && nodeId ? (
+        <MenuItem
+          icon={<FolderPlusIcon />}
+          data-testid="workspace-selection-create-space-from-node"
+          onClick={() => createSpaceFromNodeDirectory(nodeId)}
+        >
+          {t('workspaceContextMenu.createSpaceWithNodeDirectory')}
+        </MenuItem>
       ) : null}
       <MenuItem
         icon={<FocusIcon />}

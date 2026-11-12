@@ -3,6 +3,7 @@ import { useTranslation } from '@app/renderer/i18n'
 import type { StandardWindowSizeBucket } from '@contexts/settings/domain/agentSettings'
 import type { Node, ReactFlowInstance } from '@xyflow/react'
 import { resolveSpaceWorkingDirectory } from '@contexts/space/application/resolveSpaceWorkingDirectory'
+import type { ListMountsResult } from '@shared/contracts/dto'
 import type { TerminalNodeData, WorkspaceSpaceRect, WorkspaceSpaceState } from '../../../types'
 import type {
   ContextMenuState,
@@ -11,6 +12,7 @@ import type {
   SpaceTargetMountPickerState,
 } from '../types'
 import { sanitizeSpaces, validateSpaceTransfer } from '../helpers'
+import { pickMountForDirectory, resolveSpaceDirectoryFromNode } from '../spaceDirectoryFromNode'
 import { useCreateEmptySpace } from './useSpaces.createEmptySpace'
 import { createSpaceFromSelectedNodesWithMounts } from './useSpaces.createSpaceSelection'
 import { resolveSelectedChildSpaceParent } from './useSpaces.createChildSpace'
@@ -64,6 +66,7 @@ export function useWorkspaceCanvasCreateSpace({
   ) => string | null
 }): {
   createSpaceFromSelectedNodes: () => void
+  createSpaceFromNodeDirectory: (nodeId: string) => void
   createEmptySpaceAtPoint: (point: { x: number; y: number }) => Promise<string | null>
   createSpaceWithTargetMount: (payload: {
     nodeIds: string[]
@@ -407,6 +410,60 @@ export function useWorkspaceCanvasCreateSpace({
     workspacePath,
   ])
 
+  const createSpaceFromNodeDirectory = useCallback(
+    (nodeId: string) => {
+      const node = nodesRef.current.find(item => item.id === nodeId)
+      const directoryPath = node ? resolveSpaceDirectoryFromNode(node) : null
+      if (!node || !directoryPath || !directoryPath.trim()) {
+        onShowMessage?.(t('messages.spaceNodeHasNoDirectory'), 'warning')
+        setContextMenu(null)
+        setEmptySelectionPrompt(null)
+        cancelSpaceRename()
+        return
+      }
+
+      void (async () => {
+        try {
+          const mountResult = await window.opencoveApi.controlSurface.invoke<ListMountsResult>({
+            kind: 'query',
+            id: 'mount.list',
+            payload: { projectId: workspaceId },
+          })
+          const mount = pickMountForDirectory(mountResult.mounts, directoryPath)
+          if (!mount) {
+            onShowMessage?.(t('messages.spaceDirectoryOutsideMounts'), 'warning')
+            setContextMenu(null)
+            setEmptySelectionPrompt(null)
+            cancelSpaceRename()
+            return
+          }
+          createSpace({
+            nodeIds: [nodeId],
+            rect: null,
+            targetMountId: mount.mountId,
+            directoryPath,
+          })
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error)
+          onShowMessage?.(t('messages.mountListFailed', { message }), 'error')
+          setContextMenu(null)
+          setEmptySelectionPrompt(null)
+          cancelSpaceRename()
+        }
+      })()
+    },
+    [
+      cancelSpaceRename,
+      createSpace,
+      nodesRef,
+      onShowMessage,
+      setContextMenu,
+      setEmptySelectionPrompt,
+      t,
+      workspaceId,
+    ],
+  )
+
   const createEmptySpaceAtPoint = useCreateEmptySpace({
     workspaceId,
     workspacePath,
@@ -425,6 +482,7 @@ export function useWorkspaceCanvasCreateSpace({
 
   return {
     createSpaceFromSelectedNodes,
+    createSpaceFromNodeDirectory,
     createEmptySpaceAtPoint,
     createSpaceWithTargetMount: createSpace,
   }

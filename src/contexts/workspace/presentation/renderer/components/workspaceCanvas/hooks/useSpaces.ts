@@ -74,6 +74,7 @@ export function useWorkspaceCanvasSpaces({
   commitSpaceRename: (spaceId: string) => void
   setSpaceLabelColor: (spaceId: string, labelColor: LabelColor | null) => void
   createSpaceFromSelectedNodes: () => void
+  createSpaceFromNodeDirectory: (nodeId: string) => void
   createChildSpaceInParent: (
     parentSpaceId: string,
     options?: { anchor?: { x: number; y: number } | null; nodeIds?: string[] },
@@ -200,6 +201,7 @@ export function useWorkspaceCanvasSpaces({
 
   const {
     createSpaceFromSelectedNodes,
+    createSpaceFromNodeDirectory,
     createSpaceWithTargetMount,
     createEmptySpaceAtPoint: createEmptySpaceAtPointInternal,
   } = useWorkspaceCanvasCreateSpace({
@@ -383,6 +385,7 @@ export function useWorkspaceCanvasSpaces({
     commitSpaceRename,
     setSpaceLabelColor,
     createSpaceFromSelectedNodes,
+    createSpaceFromNodeDirectory,
     createChildSpaceInParent,
     createEmptySpaceAtPoint,
     spaceTargetMountPicker,

@@ -170,6 +170,7 @@ export function installBrowserOpenCoveApi(): void {
       readTerminalPaste: async () => ({
         text: navigator.clipboard?.readText ? await navigator.clipboard.readText() : '',
         hasImage: false,
+        imageFilePath: null,
       }),
       readText: async () => {
         if (navigator.clipboard?.readText) {

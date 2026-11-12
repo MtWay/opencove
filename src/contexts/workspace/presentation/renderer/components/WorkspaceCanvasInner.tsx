@@ -449,6 +449,7 @@ export function WorkspaceCanvasInner({
         insertQuickPhrase={insertQuickPhrase}
         openQuickMenuSettings={openQuickMenuSettings}
         createSpaceFromSelectedNodes={spacesApi.createSpaceFromSelectedNodes}
+        createSpaceFromNodeDirectory={spacesApi.createSpaceFromNodeDirectory}
         createChildSpaceInParent={spacesApi.createChildSpaceInParent}
         createEmptySpaceAtPoint={spacesApi.createEmptySpaceAtPoint}
         spaceTargetMountPicker={spacesApi.spaceTargetMountPicker}

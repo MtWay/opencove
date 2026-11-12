@@ -52,11 +52,16 @@ test('compact windows retain the expanded selection menu and close through their
             action !== 'Close' &&
             action !== 'Convert to Task' &&
             action !== 'Copy Relative Path' &&
-            action !== 'Copy Absolute Path',
+            action !== 'Copy Absolute Path' &&
+            // Only rendered for filesystem nodes; covered by the create-from-node-directory spec.
+            action !== 'Create Space from This Directory',
         ),
       ).toEqual(
         expandedActions.filter(
-          action => action !== 'Copy Relative Path' && action !== 'Copy Absolute Path',
+          action =>
+            action !== 'Copy Relative Path' &&
+            action !== 'Copy Absolute Path' &&
+            action !== 'Create Space from This Directory',
         ),
       )
       await expect(menu.locator(':scope > button').last()).toHaveText('Close')
